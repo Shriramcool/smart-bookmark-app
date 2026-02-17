@@ -6,12 +6,14 @@ export default function Home() {
 
   
 const signInWithGoogle = async () => {
-  await supabase.auth.signInWithOAuth({
+  const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: "http://localhost:3000/dashboard",
+      redirectTo: window.location.origin, 
     },
   });
+
+  if (error) console.error("Login error:", error);
 };
 
 
