@@ -9,21 +9,41 @@ export default function Dashboard() {
   const [url, setUrl] = useState("");
   const [bookmarks, setBookmarks] = useState([]);
 
-  // ✅ Load logged-in user
+  // ✅ Restore session after OAuth redirect
   useEffect(() => {
-    const loadUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
+    let authSubscription;
 
-      if (error || !data?.user) {
-        console.log("No user found");
+    const initializeUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        window.location.href = "/";
         return;
       }
 
-      setUser(data.user);
-      fetchBookmarks(data.user.id);
+      setUser(session.user);
+      fetchBookmarks(session.user.id);
     };
 
-    loadUser();
+    initializeUser();
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchBookmarks(session.user.id);
+      } else {
+        setUser(null);
+        window.location.href = "/";
+      }
+    });
+
+    authSubscription = data.subscription;
+
+    return () => {
+      if (authSubscription) authSubscription.unsubscribe();
+    };
   }, []);
 
   // ✅ Fetch bookmarks
@@ -42,58 +62,49 @@ export default function Dashboard() {
     setBookmarks(data || []);
   };
 
-// ✅ REALTIME LISTENER (handles INSERT + DELETE correctly)
-useEffect(() => {
-  if (!user) return;
+  // ✅ Realtime updates
+  useEffect(() => {
+    if (!user) return;
 
-  let channel;
+    let channel;
 
-  const setupRealtime = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) return;
+    const setupRealtime = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    channel = supabase
-      .channel("bookmarks-live")
+      if (!session) return;
 
-      // Listen for INSERT (user-specific)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "bookmarks",
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchBookmarks(user.id);
-        }
-      )
+      channel = supabase
+        .channel("bookmarks-live")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "bookmarks",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => fetchBookmarks(user.id)
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "bookmarks",
+          },
+          () => fetchBookmarks(user.id)
+        )
+        .subscribe();
+    };
 
-      // Listen for DELETE (must NOT filter — Supabase doesn't send user_id reliably)
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "bookmarks",
-        },
-        () => {
-          fetchBookmarks(user.id);
-        }
-      )
+    setupRealtime();
 
-      .subscribe((status) => {
-        console.log("Realtime status:", status);
-      });
-  };
-
-  setupRealtime();
-
-  return () => {
-    if (channel) supabase.removeChannel(channel);
-  };
-}, [user]);
-
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // ✅ Add bookmark
   const addBookmark = async () => {
@@ -112,27 +123,31 @@ useEffect(() => {
 
     setTitle("");
     setUrl("");
-    // ❌ Do NOT manually refetch (Realtime will handle it)
   };
 
   // ✅ Delete bookmark
   const deleteBookmark = async (id) => {
-    const { error } = await supabase.from("bookmarks").delete().eq("id", id);
-
-    if (error) {
-      console.error("Delete error:", error);
-      return;
-    }
-    // ❌ Realtime updates automatically
+    await supabase.from("bookmarks").delete().eq("id", id);
   };
 
-  // ✅ Prevent crash before user loads
-  if (!user) {
-    return <p className="p-10">Loading user...</p>;
-  }
+  // ✅ Logout
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (!user) return <p className="p-10">Loading user...</p>;
 
   return (
     <div className="p-10 max-w-xl mx-auto">
+      {/* Logout Button */}
+      <button
+        onClick={handleLogout}
+        className="bg-red-500 text-white px-4 py-2 mb-6 rounded"
+      >
+        Logout
+      </button>
+
       <h1 className="text-2xl mb-4">My Bookmarks</h1>
 
       <input
@@ -164,7 +179,13 @@ useEffect(() => {
             <a href={b.url} target="_blank">
               {b.title}
             </a>
-            <button onClick={() => deleteBookmark(b.id)}>Delete</button>
+
+            <button
+              onClick={() => deleteBookmark(b.id)}
+              className="text-red-500"
+            >
+              Delete
+            </button>
           </div>
         ))
       )}
