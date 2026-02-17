@@ -1,20 +1,34 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 export default function Home() {
+  const router = useRouter();
 
-const signInWithGoogle = async () => {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: window.location.origin, 
-    },
-  });
+  // ✅ Check if user already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getUser();
 
-  if (error) console.error("Login error:", error);
-};
+      if (data?.user) {
+        router.push("/dashboard"); // go to dashboard if logged in
+      }
+    };
 
+    checkSession();
+  }, [router]);
+
+  // ✅ Login with Google
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  };
 
   return (
     <div className="flex h-screen items-center justify-center bg-gray-100">
