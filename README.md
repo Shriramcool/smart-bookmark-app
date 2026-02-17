@@ -28,8 +28,8 @@ A real-time bookmark management web application where users can securely save, v
 
 ## ✨ Features
 
-✅ Google Authentication
-✅ Add / Delete Bookmarks
+* ✅ Google Authentication
+* Add / Delete Bookmarks
 ✅ Secure User-Based Data (Row-Level Security)
 ✅ Realtime Sync Across Tabs
 ✅ No Page Refresh Required
