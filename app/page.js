@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabase";
 
 export default function Home() {
 
-  
 const signInWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
