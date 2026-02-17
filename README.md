@@ -28,12 +28,12 @@ A real-time bookmark management web application where users can securely save, v
 
 ## ✨ Features
 
-* ✅ Google Authentication
+* Google Authentication
 * Add / Delete Bookmarks
-✅ Secure User-Based Data (Row-Level Security)
-✅ Realtime Sync Across Tabs
-✅ No Page Refresh Required
-✅ Fully Deployed Production App
+* Secure User-Based Data (Row-Level Security)
+* Realtime Sync Across Tabs
+* No Page Refresh Required
+* Fully Deployed Production App
 
 ---
 
