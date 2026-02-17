@@ -6,7 +6,7 @@ A real-time bookmark management web application where users can securely save, v
 
 ## 🚀 Live Demo
 
-👉 https://smart-bookmark-app-one-blue.vercel.app
+👉 https://smart-bookmark-app-mu-one.vercel.app/
 
 ---
 
@@ -172,23 +172,6 @@ This enforces per-user data isolation at the database level.
 * Writing secure multi-user database policies (RLS)
 * Avoiding unnecessary re-renders in realtime apps
 * Production deployment using Vercel + Supabase
-
----
-
-## 🔮 Future Improvements
-
-* Edit bookmark feature
-* Folder / Tag organization
-* Drag-and-drop sorting
-* PWA support
-* Bookmark preview metadata
-
----
-
-## 👨‍💻 Author
-
-**Shriram Gaurishankar Ughade**
-BE Computer Science (2023 Graduate)
 
 ---
 
