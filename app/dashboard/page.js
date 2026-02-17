@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [url, setUrl] = useState("");
   const [bookmarks, setBookmarks] = useState([]);
 
-  // ✅ Restore session after OAuth redirect
+  // ✅ Restore session after Google OAuth redirect
   useEffect(() => {
     let authSubscription;
 
@@ -29,6 +29,7 @@ export default function Dashboard() {
 
     initializeUser();
 
+    // Listen for login/logout changes
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
@@ -46,7 +47,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  // ✅ Fetch bookmarks
+  // ✅ Initial fetch (only once on load)
   const fetchBookmarks = async (userId) => {
     const { data, error } = await supabase
       .from("bookmarks")
@@ -62,72 +63,86 @@ export default function Dashboard() {
     setBookmarks(data || []);
   };
 
-  // ✅ Realtime updates
+  // ✅ TRUE Realtime (instant — no DB refetch)
   useEffect(() => {
     if (!user) return;
 
-    let channel;
+    const channel = supabase
+      .channel("bookmarks-live")
 
-    const setupRealtime = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      // INSERT from another tab
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "bookmarks",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setBookmarks((prev) => {
+            const exists = prev.find((b) => b.id === payload.new.id);
+            if (exists) return prev;
+            return [payload.new, ...prev];
+          });
+        }
+      )
 
-      if (!session) return;
+      // DELETE from another tab
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "bookmarks",
+        },
+        (payload) => {
+          setBookmarks((prev) =>
+            prev.filter((b) => b.id !== payload.old.id)
+          );
+        }
+      )
 
-      channel = supabase
-        .channel("bookmarks-live")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "bookmarks",
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => fetchBookmarks(user.id)
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "DELETE",
-            schema: "public",
-            table: "bookmarks",
-          },
-          () => fetchBookmarks(user.id)
-        )
-        .subscribe();
-    };
-
-    setupRealtime();
+      .subscribe();
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [user]);
 
-  // ✅ Add bookmark
+  // ✅ Add bookmark (instant UI update)
   const addBookmark = async () => {
     if (!title || !url || !user) return;
 
-    const { error } = await supabase.from("bookmarks").insert({
-      title,
-      url,
-      user_id: user.id,
-    });
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .insert({
+        title,
+        url,
+        user_id: user.id,
+      })
+      .select();
 
     if (error) {
       console.error("Insert error:", error);
       return;
     }
 
+    setBookmarks((prev) => [data[0], ...prev]);
     setTitle("");
     setUrl("");
   };
 
-  // ✅ Delete bookmark
+  // ✅ Delete bookmark (instant UI update)
   const deleteBookmark = async (id) => {
-    await supabase.from("bookmarks").delete().eq("id", id);
+    const { error } = await supabase.from("bookmarks").delete().eq("id", id);
+
+    if (error) {
+      console.error("Delete error:", error);
+      return;
+    }
+
+    setBookmarks((prev) => prev.filter((b) => b.id !== id));
   };
 
   // ✅ Logout
@@ -140,16 +155,19 @@ export default function Dashboard() {
 
   return (
     <div className="p-10 max-w-xl mx-auto">
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="bg-red-500 text-white px-4 py-2 mb-6 rounded"
-      >
-        Logout
-      </button>
+      {/* Header Row */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">My Bookmarks</h1>
 
-      <h1 className="text-2xl mb-4">My Bookmarks</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Logout
+        </button>
+      </div>
 
+      {/* Add Bookmark */}
       <input
         placeholder="Title"
         className="border p-2 w-full mb-2"
@@ -171,6 +189,7 @@ export default function Dashboard() {
         Add Bookmark
       </button>
 
+      {/* Bookmark List */}
       {bookmarks.length === 0 ? (
         <p>No bookmarks added yet.</p>
       ) : (

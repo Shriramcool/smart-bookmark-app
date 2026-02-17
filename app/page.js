@@ -21,15 +21,19 @@ export default function Home() {
   }, [router]);
 
   // ✅ Login with Google
-  const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+const signInWithGoogle = async () => {
+  const redirectUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
 
-      },
-    });
-  };
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${redirectUrl}/dashboard`,
+    },
+  });
+
+  if (error) console.error(error);
+};
 
   return (
     <div className="flex h-screen items-center justify-center bg-gray-100">
