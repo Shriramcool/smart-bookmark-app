@@ -1,36 +1,195 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🔖 Smart Bookmark App
 
-## Getting Started
+A real-time bookmark management web application where users can securely save, view, and delete bookmarks with instant synchronization across multiple tabs.
 
-First, run the development server:
+---
+
+## 🚀 Live Demo
+
+👉 https://smart-bookmark-app-one-blue.vercel.app
+
+---
+
+## 📂 GitHub Repository
+
+👉 https://github.com/Shriramcool/smart-bookmark-app
+
+---
+
+## 🛠️ Tech Stack
+
+* **Frontend:** Next.js (App Router)
+* **Backend / Database:** Supabase (PostgreSQL + Auth)
+* **Realtime Updates:** Supabase Realtime Subscriptions
+* **Authentication:** Google OAuth via Supabase
+* **Deployment:** Vercel
+
+---
+
+## ✨ Features
+
+✅ Google Authentication
+✅ Add / Delete Bookmarks
+✅ Secure User-Based Data (Row-Level Security)
+✅ Realtime Sync Across Tabs
+✅ No Page Refresh Required
+✅ Fully Deployed Production App
+
+---
+
+## 📁 Project Structure
+
+```
+smart-bookmark-app/
+│
+├── app/                # Next.js App Router pages
+│   ├── page.js         # Login page
+│   └── dashboard/      # Main bookmark dashboard
+│
+├── lib/
+│   └── supabase.js     # Supabase client configuration
+│
+├── public/             # Static assets
+│
+├── package.json        # Dependencies
+└── next.config.mjs     # Next.js configuration
+```
+
+---
+
+## ⚙️ Local Setup Instructions
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/Shriramcool/smart-bookmark-app.git
+cd smart-bookmark-app
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+npm install
+```
+
+### 3️⃣ Create `.env.local`
+
+Add your Supabase credentials:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+```
+
+### 4️⃣ Run Locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App runs at:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🧠 Problems Faced & How I Solved Them
 
-To learn more about Next.js, take a look at the following resources:
+### ❌ Problem 1: OAuth Session Lost After Redirect
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Issue:** After Google login, user session was not available on dashboard refresh.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Solution:**
+Used:
 
-## Deploy on Vercel
+```js
+supabase.auth.getSession()
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+inside `useEffect` to restore session before rendering UI.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+### ❌ Problem 2: Realtime Updates Were Delayed (1–2 Seconds)
+
+**Issue:** Bookmark added in one tab took time to appear in another tab.
+
+**Root Cause:**
+Realtime listener was refetching from database instead of updating UI instantly.
+
+**Solution:**
+Used **optimistic UI update**:
+
+```js
+.insert(...).select()
+setBookmarks(prev => [data[0], ...prev])
+```
+
+This removed dependency on refetch and made updates instant.
+
+---
+
+### ❌ Problem 3: Duplicate Realtime Fetch Calls
+
+**Issue:** Multiple subscriptions triggered unnecessary reloads.
+
+**Solution:**
+Scoped realtime listener with:
+
+```js
+filter: `user_id=eq.${user.id}`
+```
+
+and cleaned up using:
+
+```js
+supabase.removeChannel(channel)
+```
+
+---
+
+### ❌ Problem 4: Data Security Between Users
+
+**Issue:** Needed to ensure users only see their own bookmarks.
+
+**Solution:**
+Implemented **Supabase Row Level Security (RLS)**:
+
+```sql
+user_id = auth.uid()
+```
+
+This enforces per-user data isolation at the database level.
+
+---
+
+## 📈 What I Learned
+
+* Implementing realtime systems without WebSockets manually
+* Handling OAuth session persistence in Next.js
+* Writing secure multi-user database policies (RLS)
+* Avoiding unnecessary re-renders in realtime apps
+* Production deployment using Vercel + Supabase
+
+---
+
+## 🔮 Future Improvements
+
+* Edit bookmark feature
+* Folder / Tag organization
+* Drag-and-drop sorting
+* PWA support
+* Bookmark preview metadata
+
+---
+
+## 👨‍💻 Author
+
+**Shriram Gaurishankar Ughade**
+BE Computer Science (2023 Graduate)
+
+---
+
+⭐ If you like this project, feel free to star the repo!
