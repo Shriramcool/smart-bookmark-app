@@ -5,8 +5,8 @@ A real-time bookmark management web application where users can securely save, v
 ---
 
 ## 🚀 Live Demo
-
-👉 https://smart-bookmark-app-mu-one.vercel.app/
+https://smart-bookmark-app-mu-one.vercel.app/
+👉 
 
 ---
 

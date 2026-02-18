@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [url, setUrl] = useState("");
   const [bookmarks, setBookmarks] = useState([]);
 
-  // ✅ Restore session after Google OAuth redirect
+  // Restore session after Google OAuth redirect
   useEffect(() => {
     let authSubscription;
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  // ✅ Initial fetch (only once on load)
+  // Initial fetch (only once on load)
   const fetchBookmarks = async (userId) => {
     const { data, error } = await supabase
       .from("bookmarks")
@@ -63,7 +63,7 @@ export default function Dashboard() {
     setBookmarks(data || []);
   };
 
-  // ✅ TRUE Realtime (instant — no DB refetch)
+  //  Realtime 
   useEffect(() => {
     if (!user) return;
 
@@ -110,7 +110,7 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  // ✅ Add bookmark (instant UI update)
+  //  Add bookmark (instant UI update)
   const addBookmark = async () => {
     if (!title || !url || !user) return;
 
@@ -133,7 +133,7 @@ export default function Dashboard() {
     setUrl("");
   };
 
-  // ✅ Delete bookmark (instant UI update)
+  // Delete bookmark (instant UI update)
   const deleteBookmark = async (id) => {
     const { error } = await supabase.from("bookmarks").delete().eq("id", id);
 
@@ -145,7 +145,7 @@ export default function Dashboard() {
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
   };
 
-  // ✅ Logout
+  //  Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/";

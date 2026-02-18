@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 export default function Home() {
   const router = useRouter();
 
-  // ✅ Check if user already logged in
+  //  Check if user already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getUser();
@@ -20,7 +20,7 @@ export default function Home() {
     checkSession();
   }, [router]);
 
-  // ✅ Login with Google
+  //  Login with Google
 const signInWithGoogle = async () => {
   const redirectUrl =
     process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
